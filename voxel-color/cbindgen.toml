@@ -1,0 +1,10 @@
+language = "C"
+
+[parse]
+parse_deps = false
+clean = true
+
+[parse.expand]
+all_features = false
+default_features = true
+features = []

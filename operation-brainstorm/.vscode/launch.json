@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug test",
+            "program": "${workspaceFolder}/zig-out/tests/out/${fileBasenameNoExtension}-test",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "test",
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug run",
+            "program": "${workspaceFolder}/zig-out/bin/${workspaceFolderBasename}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "run",
+        }
+    ]
+}

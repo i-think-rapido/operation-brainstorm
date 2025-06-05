@@ -1,0 +1,73 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "create-folders",
+            "type": "shell",
+            "command": "mkdir",
+            "args": [
+                "-p",
+                "${workspaceFolder}/.zig-cache/bin",
+                "${workspaceFolder}/.zig-cache/o"
+            ]
+        },
+        {
+            "label": "create-links",
+            "type": "shell",
+            "command": "/usr/bin/fdfind",
+            "args": [
+                "-t",
+                "f",
+                "--changed-within",
+                "15s",
+                "--",
+                ".*",
+                "${workspaceFolder}/.zig-cache/o",
+                "|", 
+                "tac",
+                "|",
+                "while",
+                "read",
+                "line",
+                ";",
+                "do",
+                "cp",
+                "$line",
+                "${workspaceFolder}/.zig-cache/bin",
+                ";",
+                "done"
+            ]
+        },
+        {
+            "label": "test-run",
+            "type": "shell",
+            "command": "zig",
+            "args": [
+                "test",
+                "${relativeFile}",
+                "--name", "${fileBasenameNoExtension}-test",
+                "--test-no-exec"
+            ],
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "dependsOn": ["create-folder", "test-run", "create-links"],
+        },
+        {
+            "label": "build-run",
+            "type": "shell",
+            "command": "zig",
+            "args": [
+                "build",
+                "run"
+            ],
+        },
+        {
+            "label": "run",
+            "type": "shell",
+            "command": "echo",
+            "dependsOn": ["create-folder", "build-run", "create-links"]
+        }
+    ]
+}
