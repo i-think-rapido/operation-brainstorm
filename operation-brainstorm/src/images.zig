@@ -6,8 +6,43 @@ const vc = @cImport({
 });
 const dbg = @import("./dbg.zig").dbg;
 
-var voxel_color = vc.voxel_color(3, 2, 1);
-const _ = std.log.debug("{}", .{ voxel_color });
+
+
+pub const VoxelColor = struct {
+    voxel_color: vc.VoxelColors,
+
+    const Self = @This();
+
+    pub fn init(x: i32, y: i32, z: i32) !VoxelColor {
+        const voxel_color = vc.new_voxel_color(x, y, z);
+        if (voxel_color == null) {
+            return error.OutOfMemory;
+        }
+        return VoxelColor{
+            .voxel_color = voxel_color,
+        };
+    }
+
+    pub fn color(self: *Self, index: i32) rl.Color {
+        return rl.Color(
+            vc.voxel_color_r(self.voxel_color, index, color.r),
+            vc.voxel_color_g(self.voxel_color, index, color.g),
+            vc.voxel_color_b(self.voxel_color, index, color.b),
+            vc.voxel_color_a(self.voxel_color, index, color.a),
+        );
+    }
+
+    pub fn setColor(self: *Self, index: i32, c: rl.Color) void {
+        vc.set_voxel_color_r(self.voxel_color, index, c.r);
+        vc.set_voxel_color_g(self.voxel_color, index, c.g);
+        vc.set_voxel_color_b(self.voxel_color, index, c.b);
+        vc.set_voxel_color_a(self.voxel_color, index, c.a);
+    }
+};
+
+
+
+
 
 
 // pub const ImageList = struct {

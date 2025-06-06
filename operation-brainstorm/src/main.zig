@@ -55,6 +55,8 @@ pub fn show() !void {
     rl.setTargetFPS(FRAME_RATE); // Set our game to run at 60 frames-per-second
 
     // config
+    const colors = img.VoxelColor.init(3, 2, 1);
+    dbg("colors {}", .{ colors });
     // const imageList = try img.Image.loadTileSet("./data/brain.png", 6, 3);
     // defer imageList.deinit();
 
