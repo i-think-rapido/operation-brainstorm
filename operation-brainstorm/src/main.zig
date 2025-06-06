@@ -55,16 +55,16 @@ pub fn show() !void {
     rl.setTargetFPS(FRAME_RATE); // Set our game to run at 60 frames-per-second
 
     // config
-    const imageList = try img.Image.loadTileSet("./data/brain.png", 6, 3);
-    defer imageList.deinit();
+    // const imageList = try img.Image.loadTileSet("./data/brain.png", 6, 3);
+    // defer imageList.deinit();
 
-    const voxels = try imageList.voxelColors();
-    dbg("{}", .{ voxels });
+    // const voxels = try imageList.voxelColors();
+    // dbg("{}", .{ voxels });
 
-    var width_correction: f32 = @floatFromInt(imageList.width());
-    var height_correction: f32 = @floatFromInt(imageList.height());
-    width_correction /= 2.0;
-    height_correction /= 2.0;
+    // var width_correction: f32 = @floatFromInt(imageList.width());
+    // var height_correction: f32 = @floatFromInt(imageList.height());
+    // width_correction /= 2.0;
+    // height_correction /= 2.0;
 
     const container = try create_model();
 

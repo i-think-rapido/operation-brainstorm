@@ -6,11 +6,8 @@ pub extern "C" fn new_voxel_color(x: usize, y: usize, z: usize) -> VoxelColors {
     VoxelColors::new(x, y, z)
 }
 #[no_mangle] 
-pub extern "C" fn voxel_color(voxel: &VoxelColors, x: usize, y: usize, z: usize, rgba: &RGBA) -> u8 {
-    voxel.idx(x, y, z)
-        .map(|idx| voxel.get_color(idx, rgba))
-        .unwrap_or_default()
-        .unwrap_or(255)
+pub extern "C" fn voxel_color(x: usize, y: usize, z: usize) -> VoxelColors {
+    VoxelColors::new(x, y, z)
 }
 #[no_mangle] 
 pub extern "C" fn set_voxel_color(voxel: &mut VoxelColors, x: usize, y: usize, z: usize, rgba: &RGBA, value: u8) {
