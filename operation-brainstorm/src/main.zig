@@ -10,6 +10,16 @@ pub fn main() !void {
     return show();
 }
 
+export fn zig_alloc(size: usize, align: usize) callconv(.C) ?[*]u8 {
+    return std.heap.page_allocator
+        .alignedAlloc(u8, align, size) catch null;
+}
+
+export fn zig_dealloc(ptr: [*]u8, size: usize, align: usize) callconv(.C) void {
+    std.heap.page_allocator
+        .alignedFree(ptr[0..size], align);
+}
+
 const FRAME_RATE = 24;
 
 // imports
@@ -55,18 +65,11 @@ pub fn show() !void {
     rl.setTargetFPS(FRAME_RATE); // Set our game to run at 60 frames-per-second
 
     // config
-    const colors = img.VoxelColor.init(3, 2, 1);
-    dbg("colors {}", .{ colors });
-    // const imageList = try img.Image.loadTileSet("./data/brain.png", 6, 3);
-    // defer imageList.deinit();
+    _ = try img.VoxelColor.voxelColorsFromFile("./data/brain.png");
 
-    // const voxels = try imageList.voxelColors();
-    // dbg("{}", .{ voxels });
 
-    // var width_correction: f32 = @floatFromInt(imageList.width());
-    // var height_correction: f32 = @floatFromInt(imageList.height());
-    // width_correction /= 2.0;
-    // height_correction /= 2.0;
+
+
 
     const container = try create_model();
 

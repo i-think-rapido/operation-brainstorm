@@ -32,6 +32,7 @@ pub fn build(b: *std.Build) void {
 
     // artifacts
     b.installArtifact(raylib_dep.artifact("raylib")); // install raylib artifact
+    b.installArtifact(exe_mod);
 
     // executable
     const run_exe = b.addRunArtifact(exe_mod);

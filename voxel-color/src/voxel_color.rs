@@ -1,3 +1,16 @@
+use crate::zig_alloc::ZigAllocator;
+
+#[global_allocator]
+#[no_mangle]
+static GLOBAL: ZigAllocator = ZigAllocator;
+
+use core::panic::PanicInfo;
+
+#[panic_handler]
+fn handle_panic(_info: &PanicInfo) -> ! {
+    loop {} // or use core::intrinsics::abort() if available
+}
+
 use getset::Getters;
 
 
@@ -62,9 +75,11 @@ impl VoxelColors {
 
 mod memory {
 
+    use crate::zig_alloc::ZigAllocator;
+
     use super::RGBA;
 
-    use std::alloc::{alloc, dealloc, Layout};
+    use core::alloc::{GlobalAlloc, Layout};
 
     #[inline(always)]
     pub fn index(index: usize, rgba: &RGBA) -> usize {
@@ -81,8 +96,18 @@ mod memory {
     impl Values {
         pub fn new(capacity: usize) -> Self {
             unsafe {
-                let layout = Layout::array::<u8>(capacity).expect("Failed to create layout for Values");
-                let ptr = alloc(layout);
+                let ptr = if let Ok(layout) = Layout::from_size_align(capacity, 8)
+                {
+                    let ptr = ZigAllocator.alloc(layout);
+                    if ptr.is_null() {
+                        core::ptr::null_mut()
+                    }
+                    else {
+                        ptr
+                    }
+                } else {
+                    core::ptr::null_mut()
+                };
                 ptr.write_bytes(0, capacity); // Initialize memory to zero
                 Values { ptr, capacity }
             }
@@ -106,8 +131,9 @@ mod memory {
     impl Drop for Values {
         fn drop(&mut self) {
             unsafe {
-                let layout = Layout::array::<u8>(self.capacity).expect("Failed to create layout for Values");
-                dealloc(self.ptr, layout);
+                if let Ok(layout) = Layout::from_size_align(self.capacity, 8) {
+                    ZigAllocator.dealloc(self.ptr, layout);
+                }
             }
         }
     }

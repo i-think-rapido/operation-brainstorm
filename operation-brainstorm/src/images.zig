@@ -9,34 +9,67 @@ const dbg = @import("./dbg.zig").dbg;
 
 
 pub const VoxelColor = struct {
-    voxel_color: vc.VoxelColors,
+    voxel_color: vc.struct_VoxelColors,
 
     const Self = @This();
 
-    pub fn init(x: i32, y: i32, z: i32) !VoxelColor {
-        const voxel_color = vc.new_voxel_color(x, y, z);
-        if (voxel_color == null) {
-            return error.OutOfMemory;
-        }
+    pub fn init(x: i32, y: i32, z: i32) VoxelColor {
+        const voxel_color = vc.voxel_color(x, y, z);
         return VoxelColor{
             .voxel_color = voxel_color,
         };
     }
 
+    pub fn dim_x(self: *Self) i32 {
+        return vc.voxel_color_dim_x(&self.voxel_color);
+    }
+    pub fn dim_y(self: *Self) i32 {
+        return vc.voxel_color_dim_y(&self.voxel_color);
+    }
+    pub fn dim_z(self: *Self) i32 {
+        return vc.voxel_color_dim_z(&self.voxel_color);
+    }
+
     pub fn color(self: *Self, index: i32) rl.Color {
-        return rl.Color(
-            vc.voxel_color_r(self.voxel_color, index, color.r),
-            vc.voxel_color_g(self.voxel_color, index, color.g),
-            vc.voxel_color_b(self.voxel_color, index, color.b),
-            vc.voxel_color_a(self.voxel_color, index, color.a),
-        );
+        return rl.Color{
+            .r = vc.voxel_color_r(&self.voxel_color, index, color.r),
+            .g = vc.voxel_color_g(&self.voxel_color, index, color.g),
+            .b = vc.voxel_color_b(&self.voxel_color, index, color.b),
+            .a = vc.voxel_color_a(&self.voxel_color, index, color.a),
+        };
     }
 
     pub fn setColor(self: *Self, index: i32, c: rl.Color) void {
-        vc.set_voxel_color_r(self.voxel_color, index, c.r);
-        vc.set_voxel_color_g(self.voxel_color, index, c.g);
-        vc.set_voxel_color_b(self.voxel_color, index, c.b);
-        vc.set_voxel_color_a(self.voxel_color, index, c.a);
+        vc.set_voxel_color_r(&self.voxel_color, index, c.r);
+        vc.set_voxel_color_g(&self.voxel_color, index, c.g);
+        vc.set_voxel_color_b(&self.voxel_color, index, c.b);
+        vc.set_voxel_color_a(&self.voxel_color, index, c.a);
+    }
+
+    pub fn idx(self: *Self, x: i32, y: i32, z: i32) i32 {
+        return vc.voxel_color_idx(&self.voxel_color, x, y, z);
+    }
+
+    pub fn voxelColorsFromFile(file_name: [:0]const u8) !VoxelColor {
+        const image = try rl.loadImage(file_name);
+
+        const x = image.width;
+        const y = image.height;
+        const z = 1;
+        var colors = VoxelColor.init(x, y, z);
+        for (0..z) |k| {
+            for (0..@intCast(y)) |j| {
+                for (0..@intCast(x)) |i| {
+                    colors.setColor(colors.idx(@intCast(i), @intCast(j), @intCast(k)), rl.Color{
+                        .r = image.getColor(@intCast(i), @intCast(j)).r,
+                        .g = image.getColor(@intCast(i), @intCast(j)).g,
+                        .b = image.getColor(@intCast(i), @intCast(j)).b,
+                        .a = image.getColor(@intCast(i), @intCast(j)).a,
+                    });
+                }
+            }
+        }
+        return colors;
     }
 };
 
@@ -83,24 +116,6 @@ pub const VoxelColor = struct {
 //         return self.list.capacity;
 //     }
 
-//     // pub fn voxelColors(self: *const Self, ) !vc.VoxelColor {
-//     //     const x = self.list.get(0).?.width;
-//     //     const y = self.list.get(0).?.height;
-//     //     const z = self.len();
-//     //     const colors = vc.newVoxelColor(x, y, z);
-//     //     for (0..z) |k| {
-//     //         for (0..y) |j| {
-//     //             for (0..x) |i| {
-//     //                 const img = self.list.get(k).?.image;
-//     //                 colors.setVoxelColor(colors.idx(i, j, z), vc.RGBA.R, img.getColor(@intCast(i), @intCast(j)).r);
-//     //                 colors.setVoxelColor(colors.idx(i, j, z), vc.RGBA.R, img.getColor(@intCast(i), @intCast(j)).g);
-//     //                 colors.setVoxelColor(colors.idx(i, j, z), vc.RGBA.R, img.getColor(@intCast(i), @intCast(j)).b);
-//     //                 colors.setVoxelColor(colors.idx(i, j, z), vc.RGBA.A, img.getColor(@intCast(i), @intCast(j)).a);
-//     //             }
-//     //         }
-//     //     }
-//     //     return colors;
-//     // }
 // };
 
 // pub const Image = struct {
