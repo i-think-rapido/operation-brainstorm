@@ -55,13 +55,12 @@ pub fn show() !void {
     rl.setTargetFPS(FRAME_RATE); // Set our game to run at 60 frames-per-second
 
     // config
-    const colors = try img.VoxelColors.fromFile("./data/brain.png");
+    var colors = try img.VoxelColors.fromFile("./data/brain.png");
 
-
-
-
-
-    const container = try create_model();
+    var container = try create_model(0.1);
+    try initialize_shader_dim(&container.shader, &colors);
+    try initialize_shader_colors(&container.shader, &colors);
+    try initialize_shader_positions(&container.shader, &colors);
 
     while (!rl.windowShouldClose()) {
         rl.updateCamera(@constCast(&camera), rl.CameraMode.first_person);
@@ -88,44 +87,56 @@ const Container = extern struct {
     shader: rl.Shader,
     model: rl.Model,
 };
-fn create_model() !Container {
+fn create_model(size: f32) !Container {
      // Load model and shader
-    const model = try rl.loadModelFromMesh(rl.genMeshCube(1.0, 1.0, 1.0));
+    const model = try rl.loadModelFromMesh(rl.genMeshCube(size, size, size));
     const shader = try rl.loadShader("instanced_cube.vs", "instanced_cube.fs");
 
     // Dimensions
-    const dimX = 1;
-    const dimY = 3;
-    const dimZ = 2;
-    const spacing = rl.Vector3{ .x = 2, .y = 2, .z = 2 };
-    const total = dimX * dimY * dimZ;
-
     // Set shader locations
-    const loc_dimX = rl.getShaderLocation(shader, "dimX");
-    const loc_dimY = rl.getShaderLocation(shader, "dimY");
-    const loc_dimZ = rl.getShaderLocation(shader, "dimZ");
-    const loc_spacing = rl.getShaderLocation(shader, "spacing");
-    const loc_colors = rl.getShaderLocation(shader, "cubeColors");
-
-    // Set static uniforms
-    rl.setShaderValue(shader, loc_dimX, &dimX, rl.ShaderUniformDataType.int);
-    rl.setShaderValue(shader, loc_dimY, &dimY, rl.ShaderUniformDataType.int);
-    rl.setShaderValue(shader, loc_dimZ, &dimZ, rl.ShaderUniformDataType.int);
-    rl.setShaderValue(shader, loc_spacing, &spacing, rl.ShaderUniformDataType.vec3);
-
-    // Per-instance color array
-    var colors: [256]rl.Vector4 = undefined;
-    for (0..total) |i| {
-        colors[i] = rl.Vector4{
-            .x = @as(f32, @floatFromInt(rl.getRandomValue(0, 100))) / 100.0,
-            .y = @as(f32, @floatFromInt(rl.getRandomValue(0, 100))) / 100.0,
-            .z = @as(f32, @floatFromInt(rl.getRandomValue(0, 100))) / 100.0,
-            .w = 1.0,
-        };
-    }
-    rl.setShaderValueV(shader, loc_colors, &colors, rl.ShaderUniformDataType.vec4, total);
-
     model.materials[0].shader = shader;
 
     return .{ .shader = shader, .model = model };
 }
+fn initialize_shader_dim(shader: *rl.Shader, colors: *img.VoxelColors) !void {
+    const loc_dimX = rl.getShaderLocation(shader.*, "dimX");
+    const loc_dimY = rl.getShaderLocation(shader.*, "dimY");
+    const loc_dimZ = rl.getShaderLocation(shader.*, "dimZ");
+
+    // Set shader locations
+    rl.setShaderValue(shader.*, loc_dimX, &colors.dimX, rl.ShaderUniformDataType.int);
+    rl.setShaderValue(shader.*, loc_dimY, &colors.dimY, rl.ShaderUniformDataType.int);
+    rl.setShaderValue(shader.*, loc_dimZ, &colors.dimZ, rl.ShaderUniformDataType.int);
+}
+fn initialize_shader_colors(shader: *rl.Shader, colors: *img.VoxelColors) !void {
+    const loc_colors = rl.getShaderLocation(shader.*, "colors");
+
+    const arr = try colors.array();
+    defer img.VoxelColors.dearray(arr);
+
+    rl.setShaderValueV(shader.*, loc_colors, @ptrCast(&arr), rl.ShaderUniformDataType.int, @intCast(colors.size() * 4));
+}
+fn initialize_shader_positions(shader: *rl.Shader, colors: *img.VoxelColors) !void {
+    const loc_positions = rl.getShaderLocation(shader.*, "positions");
+
+    const arr = try create_positions(colors);
+    defer std.heap.page_allocator.free(arr);
+
+    rl.setShaderValueV(shader.*, loc_positions, @ptrCast(&arr), rl.ShaderUniformDataType.vec3, @intCast(colors.size()));
+}
+
+fn create_positions(colors: *img.VoxelColors) ![]rl.Vector3 {
+    const allocator = std.heap.page_allocator;
+    var positions = try allocator.alloc(rl.Vector3, colors.size());
+
+    for (0..dimensions[0]) |x| {
+        for (0..dimensions[1]) |y| {
+            for (0..dimensions[2]) |z| {
+                positions[try colors.index(x, y, z)] = rl.Vector3{ .x = @floatFromInt(x * voxel_size), .y = @floatFromInt(y * voxel_size), .z = @floatFromInt(z * voxel_size) };
+            }
+        }
+    }
+
+    return positions;
+}
+

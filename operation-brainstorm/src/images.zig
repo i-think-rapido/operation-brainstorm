@@ -15,12 +15,18 @@ pub const VoxelColors = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, dimX: usize, dimY: usize, dimZ: usize) !Self {
-        const colors = try allocator.alloc(rl.Color, @intCast(dimX * dimY * dimZ));
-        return Self{ .dimX = dimX, .dimY = dimY, .dimZ = dimZ, .colors = colors };
+    pub fn init(dimX: usize, dimY: usize, dimZ: usize) !Self {
+        const allocator = std.heap.page_allocator;
+        const slice = try allocator.alloc(rl.Color, @intCast(dimX * dimY * dimZ));
+        return Self{ .dimX = dimX, .dimY = dimY, .dimZ = dimZ, .colors = slice };
     }
     pub fn deinit(self: *Self) void {
-        self.colors.deinit();
+        const allocator = std.heap.page_allocator;
+        allocator.free(self.colors);
+    }
+
+    pub fn size(self: *const Self) usize {
+        return self.dimX * self.dimY * self.dimZ;
     }
 
     pub fn get(self: *const Self, idx: usize) rl.Color {
@@ -42,7 +48,7 @@ pub const VoxelColors = struct {
         const imageHeight = image.height;
         const layers = 1;
 
-        var colors = try VoxelColors.init(std.heap.page_allocator, @intCast(imageWidth), @intCast(imageHeight), @intCast(layers));
+        var colors = try VoxelColors.init(@intCast(imageWidth), @intCast(imageHeight), @intCast(layers));
 
         for (0..@intCast(imageWidth)) |i| {
             for (0..@intCast(imageHeight)) |j| {
@@ -54,6 +60,25 @@ pub const VoxelColors = struct {
 
         return colors;
     }
+
+    pub fn array(self: *const Self) ![]u8 {
+        const colorCount = self.dimX * self.dimY * self.dimZ * 4;
+        const allocator = std.heap.page_allocator;
+        const slice = try allocator.alloc(u8, colorCount);
+        for (0..self.dimX * self.dimY * self.dimZ) |i| {
+            const color = self.colors[i];
+            slice[i * 4 + 0] = @intCast(color.r);
+            slice[i * 4 + 1] = @intCast(color.g);
+            slice[i * 4 + 2] = @intCast(color.b);
+            slice[i * 4 + 3] = @intCast(color.a);
+        }
+        return slice;
+    }
+    pub fn dearray(arr: []u8) void {
+        const allocator = std.heap.page_allocator;
+        allocator.free(arr);
+    }
+    
 };
 
 
