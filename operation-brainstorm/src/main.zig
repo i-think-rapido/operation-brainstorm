@@ -10,16 +10,6 @@ pub fn main() !void {
     return show();
 }
 
-export fn zig_alloc(size: usize, align: usize) callconv(.C) ?[*]u8 {
-    return std.heap.page_allocator
-        .alignedAlloc(u8, align, size) catch null;
-}
-
-export fn zig_dealloc(ptr: [*]u8, size: usize, align: usize) callconv(.C) void {
-    std.heap.page_allocator
-        .alignedFree(ptr[0..size], align);
-}
-
 const FRAME_RATE = 24;
 
 // imports
@@ -65,7 +55,7 @@ pub fn show() !void {
     rl.setTargetFPS(FRAME_RATE); // Set our game to run at 60 frames-per-second
 
     // config
-    _ = try img.VoxelColor.voxelColorsFromFile("./data/brain.png");
+    const colors = try img.VoxelColors.fromFile("./data/brain.png");
 
 
 
@@ -80,7 +70,7 @@ pub fn show() !void {
         rl.clearBackground(rl.Color.ray_white);
 
         rl.beginMode3D(camera);
-        rl.drawModel(container.model, rl.Vector3{ .x = 0.0, .y = 0.0, .z = 0.0 }, 1.0, rl.Color.pink);
+        rl.drawModel(container.model, rl.Vector3{ .x = 0.0, .y = 0.0, .z = 0.0 }, 1.0, colors.get(0));
         rl.endMode3D();
 
         rl.drawText("Instanced Cubes", 10, 10, 20, rl.Color.light_gray);
