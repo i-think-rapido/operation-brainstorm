@@ -1,4 +1,5 @@
 use getset::Getters;
+use raylib::{color::Color, texture::Image};
 
 
 
@@ -14,7 +15,7 @@ pub struct VoxelColors {
     #[getset(get)]
     pub dim_z: usize,
     
-    colors: Vec<Value>,
+    colors: Vec<Color>,
 }
 
 impl VoxelColors {
@@ -30,6 +31,48 @@ impl VoxelColors {
 
             colors: vec, // 4 for RGBA
         }
+    }
+
+    pub fn new_from_singe_picture(path: &dyn AsRef<str>, cols: usize, rows: usize) -> anyhow::Result<Self> {
+        let mut img = Image::load_image(path.as_ref())?;
+        let dim_x = img.width() as usize / cols;
+        let dim_y = img.height() as usize / rows;
+        let dim_z = cols * rows; // Single layer for 2D image
+
+        let mut colors = Self::new(dim_x, dim_y, dim_z);
+
+        for i in 0..img.width() as usize {
+            for j in 0..img.height() as usize {
+                let x = i % dim_x;
+                let y = j % dim_y;
+                let z = i / dim_x * j / dim_y;
+                if let Some(index) = colors.idx(x, y, z) {
+                    colors.colors[index] = img.get_color(i as i32, j as i32);
+                }
+
+            }
+        }
+
+        Ok(colors)
+    }
+    pub fn new_example() -> Self {
+        let mut out = Self::new(5, 4, 3);
+
+        let rand = |idx: i32| {
+            match idx % 3 {
+                0 => Color::RED,
+                1 => Color::GREEN,
+                2 => Color::BLUE,
+                _ => unreachable!()
+            }
+        };
+
+        for i in 0..out.capacity()
+        {
+            out.colors[i] = rand(i as i32);
+        }
+
+        out
     }
 
     #[inline(always)]
@@ -61,16 +104,20 @@ impl VoxelColors {
         if x >= self.dim_x || y >= self.dim_y || z >= self.dim_z { return None }
         Some(x + y * self.dim_x + z * self.dim_x * self.dim_y)
     }
+    pub fn dimensions(&self, index: usize) -> Option<(usize, usize, usize)> {
+        if index >= self.capacity() { return None }
+        let z = index / (self.dim_x * self.dim_y);
+        let y = (index % (self.dim_x * self.dim_y)) / self.dim_x;
+        let x = index % self.dim_x;
+        Some((x, y, z))
+    }
 
-}
+    pub fn process(&self, mut func: impl FnMut(usize, Color)) {
+        for (index, color) in self.colors.iter().enumerate() {
+            func(index, color.clone());
+        }
+    }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-struct Value {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
 }
 
 #[cfg(test)]
