@@ -1,5 +1,10 @@
+mod voxel_color;
+
+
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use voxel_color::VoxelColors;
+
 
 fn main() {
 
