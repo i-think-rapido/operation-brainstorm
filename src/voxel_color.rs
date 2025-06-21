@@ -1,152 +1,142 @@
-use getset::Getters;
-use raylib::{color::Color, texture::Image};
+use anyhow::bail;
+use tracing_subscriber::field::debug;
 
+use std::{collections::HashMap, sync::Arc};
 
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum RGBA { R, G, B, A, }
-
-#[derive(Getters, Debug)]
-pub struct VoxelColors {
-    #[getset(get)]
-    pub dim_x: usize,
-    #[getset(get)]
-    pub dim_y: usize,
-    #[getset(get)]
-    pub dim_z: usize,
-    
-    colors: Vec<Color>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Coordinate {
+    x: usize,
+    y: usize,
+    z: usize,
 }
 
-impl VoxelColors {
-    pub fn new(dim_x: usize, dim_y: usize, dim_z: usize) -> Self {
-        let mut  vec = Vec::with_capacity(dim_x * dim_y * dim_z);
-        unsafe {
-            vec.set_len(dim_x * dim_y * dim_z);
-        }        
-        VoxelColors {
-            dim_x,
-            dim_y,
-            dim_z,
 
-            colors: vec, // 4 for RGBA
-        }
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Index {
+    dimensions: Arc<Coordinate>,
+    value: Coordinate,
+}
+impl Index {
+    pub fn from_coordinates(x: usize, y: usize, z: usize, dimensions: &Arc<Coordinate>) -> anyhow::Result<Self> {
+        if x >= dimensions.x { bail!("x coordinate is too big") }
+        if y >= dimensions.x { bail!("y coordinate is too big") }
+        if z >= dimensions.x { bail!("z coordinate is too big") }
+        Ok(Self { dimensions: dimensions.clone(), value: Coordinate { x, y, z }})
     }
-
-    pub fn new_from_singe_picture(path: &dyn AsRef<str>, cols: usize, rows: usize) -> anyhow::Result<Self> {
-        let mut img = Image::load_image(path.as_ref())?;
-        let dim_x = img.width() as usize / cols;
-        let dim_y = img.height() as usize / rows;
-        let dim_z = cols * rows; // Single layer for 2D image
-
-        let mut colors = Self::new(dim_x, dim_y, dim_z);
-
-        for i in 0..img.width() as usize {
-            for j in 0..img.height() as usize {
-                let x = i % dim_x;
-                let y = j % dim_y;
-                let z = i / dim_x * j / dim_y;
-                if let Some(index) = colors.idx(x, y, z) {
-                    colors.colors[index] = img.get_color(i as i32, j as i32);
-                }
-
-            }
-        }
-
-        Ok(colors)
+    pub fn from_usize(idx: usize, dimensions: &Arc<Coordinate>) -> anyhow::Result<Self> {
+        if dimensions.x * dimensions.y * dimensions.z <= idx { bail!("index is too big") }
+        let x = idx % dimensions.x;
+        let y = (idx / dimensions.x) % dimensions.y;
+        let z = (idx / dimensions.y / dimensions.x) % dimensions.z;
+        Ok(Self { dimensions: dimensions.clone(), value: Coordinate { x, y, z }})
     }
-    pub fn new_example() -> Self {
-        let mut out = Self::new(5, 4, 3);
-
-        let rand = |idx: i32| {
-            match idx % 3 {
-                0 => Color::RED,
-                1 => Color::GREEN,
-                2 => Color::BLUE,
-                _ => unreachable!()
-            }
-        };
-
-        for i in 0..out.capacity()
+}
+impl From<Index> for Option<usize> {
+    fn from(index: Index) -> Self {
+        if  index.dimensions.x <= index.value.x ||
+            index.dimensions.y <= index.value.y ||
+            index.dimensions.z <= index.value.z
         {
-            out.colors[i] = rand(i as i32);
+            None
         }
+        else {
+            Some(   index.value.z * index.dimensions.y * index.dimensions.x 
+                +   index.value.y * index.dimensions.x 
+                +   index.value.x
+            )
+        }
+    }
+}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+impl Color {
+    pub fn into_raylib(&self, alpha: u8) -> raylib::color::Color {
+        if alpha == 0 {
+            NONE_COLOR.clone()
+        }
+        else {
+            raylib::color::Color::new(self.r, self.g, self.b, alpha)
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ColorValue(Color, u8);
+impl ColorValue {
+    pub fn to_none(&self) -> ColorValue {
+        let mut out = self.clone();
+        out.1 = 0;
         out
     }
+    pub fn to_alpha(&self, alpha: u8) -> ColorValue {
+        let mut out = self.clone();
+        out.1 = alpha;
+        out
+    }
+    pub fn color(&self) -> &Color {
+        &self.0
+    }
+    pub fn alpha(&self) -> u8 {
+        self.1
+    }
+}
+impl From<raylib::color::Color> for ColorValue {
+    fn from(value: raylib::color::Color) -> Self {
+        ColorValue(Color { r: value.r, g: value.g, b: value.b }, value.a )
+    }
+}
+impl From<ColorValue> for raylib::color::Color {
+    fn from(value: ColorValue) -> Self {
+        if value.1 == 0 {
+            NONE_COLOR.clone()
+        }
+        else {
+            raylib::color::Color{ r: value.0.r, g: value.0.g, b: value.0.b, a: value.1 }
+        }
+    }
+}
+pub type Colors = HashMap<Index, ColorValue>;
 
-    #[inline(always)]
+const DUMMY_COLOR: raylib::color::Color = raylib::color::Color::PINK;
+lazy_static::lazy_static!(
+    static ref NONE_COLOR: raylib::color::Color = DUMMY_COLOR.alpha(0.0);
+);
+
+#[derive(Debug, Clone)]
+pub struct VoxelColors {
+    dimensions: Arc<Coordinate>,
+    colors: Colors,
+}
+impl VoxelColors {
+    pub fn new(dim_x: usize, dim_y: usize, dim_z: usize) -> Self {
+        VoxelColors { dimensions: Arc::new(Coordinate{ x: dim_x, y: dim_y, z: dim_z}), colors: Colors::default() }
+    }
+    pub fn set(&mut self, idx: &Index, color: ColorValue) {
+        self.colors.insert(idx.clone(), color);
+    }
+    pub fn get(&mut self, idx: &Index) -> Option<ColorValue> {
+        self.colors.get(idx).cloned()
+    }
+    pub fn to_none(&mut self, idx: &Index) {
+        if let Some(color) = self.colors.get_mut(idx) {
+            *color = color.to_none();
+        }
+    }
+    pub fn to_alpha(&mut self, idx: &Index, alpha: u8) {
+        if let Some(color) = self.colors.get_mut(idx) {
+            *color = color.to_alpha(alpha);
+        }
+    }
     pub fn capacity(&self) -> usize {
-        self.dim_x * self.dim_y * self.dim_z
+        self.dimensions.x * self.dimensions.y * self.dimensions.z
     }
-
-    pub fn get_color(&self, index: usize, rgba: &RGBA) -> Option<u8> {
-        self.colors.get(index).map(|v| match rgba {
-            RGBA::R => v.r,
-            RGBA::G => v.g,
-            RGBA::B => v.b,
-            RGBA::A => v.a,
-        })
-    }
-
-    pub fn set_color(&mut self, index: usize, rgba: &RGBA, value: u8) {
-        if let Some(color) = self.colors.get_mut(index) {
-            match rgba {
-                RGBA::R => color.r = value,
-                RGBA::G => color.g = value,
-                RGBA::B => color.b = value,
-                RGBA::A => color.a = value,
-            }
-        }
-    }
-
-    pub fn idx(&self, x: usize, y: usize, z: usize) -> Option<usize> {
-        if x >= self.dim_x || y >= self.dim_y || z >= self.dim_z { return None }
-        Some(x + y * self.dim_x + z * self.dim_x * self.dim_y)
-    }
-    pub fn dimensions(&self, index: usize) -> Option<(usize, usize, usize)> {
-        if index >= self.capacity() { return None }
-        let z = index / (self.dim_x * self.dim_y);
-        let y = (index % (self.dim_x * self.dim_y)) / self.dim_x;
-        let x = index % self.dim_x;
-        Some((x, y, z))
-    }
-
-    pub fn process(&self, mut func: impl FnMut(usize, Color)) {
-        for (index, color) in self.colors.iter().enumerate() {
-            func(index, color.clone());
-        }
-    }
-
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_voxel() {
-        let arr = [RGBA::R, RGBA::G, RGBA::B, RGBA::A];
-
-        let mut voxel_color = VoxelColors::new(3, 2, 1);
-
-        for ref rgba in arr {
-            assert_eq!(voxel_color.get_color(0, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(1, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(2, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(3, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(4, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(5, rgba), Some(0));
-            assert_eq!(voxel_color.get_color(6, rgba), None);
-        }
-
-        for ref rgba in arr {
-            voxel_color.set_color(0, rgba, 13);
-        }
-        for ref rgba in arr {
-            assert_eq!(voxel_color.get_color(0, rgba), Some(13));
-        }
-
-        assert_eq!(voxel_color.capacity(), 6);
+    pub fn dimensions(&self) -> Arc<Coordinate> {
+        self.dimensions.clone()
     }
 }
+
