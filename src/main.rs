@@ -6,9 +6,10 @@ mod camera;
 mod state;
 mod lifecycle;
 
+use raylib::color::Color;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::voxel_colors::VoxelColors;
+use crate::{color::RGBA, voxel_colors::VoxelColors};
 
 mod constants {
     pub const CUBE_SIZE: f32 = 0.05;
@@ -27,6 +28,36 @@ fn main() -> anyhow::Result<()> {
     info!("Operation Branstorm is starting...");
     let mut state = lifecycle::prepare_state(VoxelColors::from_single_picture(&"./data/brain.png", 6, 3)?)?;
     // let mut state = prepare_state(VoxelColors::new_example());
+
+    let pl = &mut state.color_pipeline;
+
+    pl.add_step(|mut vc| {
+
+            let mut iter = vc.iter()?;
+            while let Some(index) = iter.next() {
+                if let Some(rgba) = vc.get_mut(index) {
+                    if rgba.is_active() { rgba.set_a(160); }
+                }
+            }
+
+            Ok(vc)
+    });
+
+    let mut colorize = |color: raylib::color::Color, min: u8, max: u8| {
+        pl.add_step(move |mut vc| {
+            let mut iter = vc.iter()?;
+            while let Some(index) = iter.next() {
+                if let Some(rgba) = vc.get_mut(index) {
+                    if rgba.grey() > max || rgba.grey() < min { continue; }
+                    *rgba = RGBA::from(color);
+                }
+            };
+
+            Ok(vc)
+        });
+    };
+
+    colorize(Color::BLUE.clone(), 95, 215);
 
     info!("Operation Branstorm is running...");
     lifecycle::run(&mut state)?;

@@ -32,6 +32,11 @@ impl Debug for RGBA {
 }
 
 // raylib::color::RGBA
+impl From<&mut Color> for RGBA {
+    fn from(value: &mut Color) -> Self {
+        Self { color: ColorValues { a: value.a, b: value.b, g: value.g, r: value.r } }
+    }
+}
 impl From<&Color> for RGBA {
     fn from(value: &Color) -> Self {
         Self { color: ColorValues { a: value.a, b: value.b, g: value.g, r: value.r } }
