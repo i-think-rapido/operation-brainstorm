@@ -1,7 +1,4 @@
 
-use std::num::IntErrorKind;
-
-use anyhow::bail;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
@@ -23,12 +20,12 @@ pub enum Index {
 }
 
 impl Index {
-    pub fn capacity(self) -> Result<usize, IndexError> {
-        match self {
-            Index::Dimensions(dim_x, dim_y, dim_z) => Ok(dim_x * dim_y * dim_z),
-            _ => Err(IndexError::NoDimensionsProvided)
-        }
-    }
+    // pub fn capacity(self) -> Result<usize, IndexError> {
+    //     match self {
+    //         Index::Dimensions(dim_x, dim_y, dim_z) => Ok(dim_x * dim_y * dim_z),
+    //         _ => Err(IndexError::NoDimensionsProvided)
+    //     }
+    // }
     pub fn to_index(self, dimensions: Index) -> Result<Self, IndexError> {
         if let Index::Dimensions(dim_x, dim_y, dim_z) = dimensions {
             Ok(match self {
@@ -84,14 +81,14 @@ impl Index {
         }
     }
 
-    pub fn is_index(&self) -> bool {
-        if let Index::Index(_) = self {
-            true
-        }
-        else {
-            false
-        }
-    }
+    // pub fn is_index(&self) -> bool {
+    //     if let Index::Index(_) = self {
+    //         true
+    //     }
+    //     else {
+    //         false
+    //     }
+    // }
     pub fn is_dimensions(&self) -> bool {
         if let Index::Dimensions(_, _, _) = self {
             true
@@ -107,7 +104,7 @@ impl Index {
         }
         if let Index::Index(idx) = self.to_index(dimensions)? {
             let index = Index::Index(idx + 1);
-            let _ = index.to_dimensions(dimensions)?;
+            let _ = index.to_dimensions(dimensions).map_err(|_| IndexError::CantIncreaseIndex)?;
             Ok(index)
         }
         else {

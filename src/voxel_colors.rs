@@ -55,11 +55,11 @@ impl VoxelColors {
             None
         }
     }
-    pub fn set(&mut self, idx: Index, color: RGBA) {
-        if let Some(c) = self.get_mut(idx) {
-            *c = color;
-        }
-    }
+    // pub fn set(&mut self, idx: Index, color: RGBA) {
+    //     if let Some(c) = self.get_mut(idx) {
+    //         *c = color;
+    //     }
+    // }
 
     pub fn process<F>(&self, fun: F) -> anyhow::Result<()>
         where F: FnMut(&Index, Option<RGBA>) -> anyhow::Result<()>
