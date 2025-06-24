@@ -5,10 +5,15 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
+avl = "0.8.0"
 getset = "0.1.6"
+glob = "0.3.2"
 lazy_static = "1.5.0"
 parking_lot = "0.12.4"
 raylib = "5.5.1"
+regex = "1.11.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 thiserror = "2.0.12"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

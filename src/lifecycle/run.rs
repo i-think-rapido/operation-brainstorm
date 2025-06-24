@@ -2,7 +2,7 @@ use raylib::{color::Color, math::Vector3, prelude::{RaylibDraw, RaylibDraw3D, Ra
 use tracing::info;
 
 use crate::constants::CUBE_SIZE;
-use crate::model::{index::Index, state::State};
+use crate::graphics::state::State;
 
 pub fn run(state: &mut State) -> anyhow::Result<()> {
     info!("Running with state: {}", state.data);
@@ -21,36 +21,10 @@ pub fn run(state: &mut State) -> anyhow::Result<()> {
         d.draw_text("Hello, world!", 12, 12, 20, Color::BLACK);
 
 
-        let vc = state.color_pipeline.process(state.colors.clone())?;
+        let colors = state.color_pipeline.process(&state.voxel_set);
         d.draw_mode3D(state.camera, |mut rl, _| {
-            let _ = vc.process(|index, rgba| {
-                if let (
-                    Ok(Index::Dimensions(x, y, z)),
-                    Index::Dimensions(dim_x, dim_y, dim_z),
-                    Some(rgba)
-                )
-                = (
-                    index.to_dimensions(vc.dimensions()),
-                    vc.dimensions(),
-                    rgba,
-                ) 
-                {
-                    if rgba.is_active() {
-                        rl.draw_cube(
-                            Vector3::new(
-                                    correct(CUBE_SIZE * x as f32,  CUBE_SIZE * dim_x as f32), 
-                                -correct(CUBE_SIZE * y as f32,  CUBE_SIZE * dim_y as f32),
-                                -correct(CUBE_SIZE * z as f32, -CUBE_SIZE * dim_z as f32),
-                            ), 
-                            CUBE_SIZE, 
-                            CUBE_SIZE, 
-                            CUBE_SIZE, 
-                            raylib::prelude::Color::from(rgba),
-                        );
-                    }
-                }
-                Ok(())
-            });
+            for voxel in &colors {
+            }
         });
     }
 
