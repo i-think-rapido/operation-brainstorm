@@ -1,15 +1,10 @@
-mod index;
-mod color;
-mod voxel_colors;
-mod color_pipeline;
-mod camera;
-mod state;
+mod model;
 mod lifecycle;
 
 use raylib::color::Color;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{color::RGBA, voxel_colors::VoxelColors};
+use crate::model::{color::RGBA, voxel_colors::VoxelColors};
 
 mod constants {
     pub const CUBE_SIZE: f32 = 0.05;

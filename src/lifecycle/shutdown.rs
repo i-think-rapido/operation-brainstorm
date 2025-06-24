@@ -1,6 +1,6 @@
 use tracing::info;
 
-use crate::state::State;
+use crate::model::state::State;
 
 
 pub fn shutdown(state: &mut State) {

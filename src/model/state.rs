@@ -1,7 +1,8 @@
 use raylib::math::Vector3;
 use tracing::info;
 
-use crate::{camera::CameraPosition, color_pipeline::ColorPipeline, constants::{CUBE_SIZE, FRAME_RATE}, index::Index, voxel_colors::VoxelColors};
+use super::{camera::CameraPosition, color_pipeline::ColorPipeline, index::Index, voxel_colors::VoxelColors};
+use crate::constants::{CUBE_SIZE, FRAME_RATE};
 
 pub struct State<'a> {
     pub data: String,
@@ -15,7 +16,7 @@ pub struct State<'a> {
 }
 impl<'a> State<'a> {
     pub fn update_camera(&mut self) {
-        self.camera.position = crate::camera::COORDINATES
+        self.camera.position = super::camera::COORDINATES
             [self.camera_position.0]
             [self.camera_position.1]
             ;

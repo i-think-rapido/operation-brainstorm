@@ -1,7 +1,8 @@
 use raylib::{color::Color, math::Vector3, prelude::{RaylibDraw, RaylibDraw3D, RaylibMode3DExt}};
 use tracing::info;
 
-use crate::{constants::CUBE_SIZE, index::Index, state::State};
+use crate::constants::CUBE_SIZE;
+use crate::model::{index::Index, state::State};
 
 pub fn run(state: &mut State) -> anyhow::Result<()> {
     info!("Running with state: {}", state.data);

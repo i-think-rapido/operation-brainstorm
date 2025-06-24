@@ -1,4 +1,4 @@
-use crate::voxel_colors::VoxelColors;
+use super::voxel_colors::VoxelColors;
 use std::sync::Arc;
 
 pub struct ColorPipeline<'a>(Vec<Arc<dyn Fn(VoxelColors) -> anyhow::Result<VoxelColors> + 'a>>);

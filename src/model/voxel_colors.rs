@@ -1,6 +1,6 @@
 
-pub use crate::color::*;
-use crate::index::{Index, IndexError, IndexIterator};
+pub use super::color::*;
+use super::index::{Index, IndexError, IndexIterator};
 use parking_lot::Mutex;
 use raylib::prelude::Image;
 

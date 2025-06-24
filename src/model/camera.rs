@@ -2,7 +2,7 @@ use raylib::ffi::DEG2RAD;
 use raylib::math::Matrix;
 use raylib::prelude::{Vector3, KeyboardKey};
 
-use crate::state::State;
+use super::state::State;
 
 const CLOCKWISE_STEPS: usize = 8;
 const HEIGHT_STEPS: usize = 8;
