@@ -3,19 +3,6 @@ use std::ops::{Deref, DerefMut};
 use crate::data_structures::voxel::{Filter, Voxel, VoxelType};
 
 
-/// deref
-impl Deref for Voxel {
-    type Target = VoxelType;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl DerefMut for Voxel {
-    fn deref_mut(&mut self) -> &mut VoxelType {
-        &mut self.0
-    }
-}
-
 /// ord
 impl PartialOrd for Voxel {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

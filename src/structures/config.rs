@@ -16,4 +16,5 @@ pub struct Config<C> {
 /// core modules
 crate::core_modules!();
 
-pub(crate) mod serde_impls;
+/// trait modules
+crate::trait_modules!(serde_impls);

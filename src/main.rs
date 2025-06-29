@@ -13,3 +13,5 @@ use crate::app::App;
 fn main() -> anyhow::Result<()> {
     App::run()
 }
+
+use core::*;
